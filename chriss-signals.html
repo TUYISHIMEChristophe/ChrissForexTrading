@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chriss Forex — Signal Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<script type="module">
+import { initializeApp }       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot,
+         query, orderBy, serverTimestamp, doc, setDoc,
+         getDoc, updateDoc, getDocs, deleteDoc }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyAgSUYbsYHuFQlm6jexOP0gYsQ1L5ttxyY",
+  authDomain:        "chriss-forex-trading.firebaseapp.com",
+  projectId:         "chriss-forex-trading",
+  storageBucket:     "chriss-forex-trading.firebasestorage.app",
+  messagingSenderId: "779485758625",
+  appId:             "1:779485758625:web:ec683ac46f0e721d811ce0"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+window._db  = db;
+window._fs  = { collection, addDoc, onSnapshot, query, orderBy,
+                serverTimestamp, doc, setDoc, getDoc, updateDoc,
+                getDocs, deleteDoc };
+window._fbReady = true;
+window.dispatchEvent(new Event('fb-ready'));
+</script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#C9A84C;--gold-light:#E8CB7A;--gold-dim:#8B6E2A;
+  --dark:#0A0A0A;--dark-2:#111111;--dark-3:#181818;--dark-4:#222222;--dark-5:#2A2A2A;
+  --text:#F0EDE6;--text-muted:#9A9590;--text-dim:#5C5852;
+  --border:rgba(201,168,76,0.15);--border-strong:rgba(201,168,76,0.35);
+  --serif:'Cormorant Garamond',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;
+  --green:#22C55E;--red:#EF4444;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--dark);color:var(--text);font-family:var(--sans);font-size:15px;display:flex;flex-direction:column}
+
+/* ── LOADING ── */
+#loadingSpinner{position:fixed;inset:0;z-index:999;background:var(--dark);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem}
+.spinner{width:32px;height:32px;border:2px solid var(--border-strong);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loadingSpinner p{font-size:0.82rem;color:var(--text-dim)}
+
+/* ── LOGIN ── */
+#loginScreen{position:fixed;inset:0;z-index:998;background:var(--dark);display:none;align-items:center;justify-content:center;padding:1rem}
+.login-box{width:100%;max-width:400px;background:var(--dark-2);border:1px solid var(--border-strong);padding:2.5rem 2rem}
+.login-logo{font-family:var(--serif);font-size:2rem;font-weight:700;color:var(--gold);margin-bottom:0.25rem;text-align:center}
+.login-logo span{color:var(--text)}
+.login-sub{text-align:center;font-size:0.82rem;color:var(--text-dim);margin-bottom:2rem}
+.login-err{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#f87171;font-size:0.8rem;padding:0.6rem 0.9rem;margin-bottom:1rem;display:none}
+.lf-group{margin-bottom:1rem}
+.lf-group label{display:block;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin-bottom:5px}
+.lf-group input{width:100%;background:var(--dark-3);border:1px solid var(--border);color:var(--text);font-family:var(--sans);font-size:0.9rem;padding:0.65rem 0.9rem;outline:none;transition:border-color 0.2s}
+.lf-group input:focus{border-color:var(--border-strong)}
+.lf-group input::placeholder{color:var(--text-dim)}
+.login-btn{width:100%;background:var(--gold);color:var(--dark);border:none;font-family:var(--sans);font-weight:500;font-size:0.9rem;padding:0.85rem;cursor:pointer;letter-spacing:0.04em;margin-top:0.5rem;transition:background 0.15s}
+.login-btn:hover{background:var(--gold-light)}
+.login-btn:disabled{opacity:0.5;cursor:not-allowed}
+.login-note{background:rgba(201,168,76,0.06);border:1px solid var(--border);font-size:0.75rem;color:var(--text-dim);padding:0.6rem 0.8rem;text-align:center;line-height:1.6;margin-top:1.25rem}
+.login-note strong{color:var(--gold)}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 1rem;height:56px;flex-shrink:0;background:var(--dark-2);border-bottom:1px solid var(--border);gap:1rem}
+.topbar-left{display:flex;align-items:center;gap:0.75rem}
+.menu-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px;display:flex;align-items:center;justify-content:center}
+.menu-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.logo{font-family:var(--serif);font-size:1.25rem;font-weight:600;color:var(--gold);white-space:nowrap}
+.logo span{color:var(--text)}
+.search-wrap{flex:1;max-width:340px;position:relative}
+.search-wrap input{width:100%;background:var(--dark-3);border:1px solid var(--border);color:var(--text);font-family:var(--sans);font-size:0.83rem;padding:0.45rem 0.75rem 0.45rem 2.2rem;outline:none;transition:border-color 0.2s}
+.search-wrap input:focus{border-color:var(--border-strong)}
+.search-wrap input::placeholder{color:var(--text-dim)}
+.search-icon{position:absolute;left:0.6rem;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none}
+.search-icon svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+.topbar-right{display:flex;align-items:center;gap:0.5rem}
+.user-pill{display:flex;align-items:center;gap:0.5rem;background:rgba(201,168,76,0.08);border:1px solid var(--border);padding:0.3rem 0.7rem;font-size:0.78rem;color:var(--gold);cursor:pointer;position:relative}
+.user-menu{position:absolute;top:calc(100% + 6px);right:0;background:var(--dark-3);border:1px solid var(--border-strong);min-width:160px;z-index:100;display:none}
+.user-menu.open{display:block}
+.user-menu a{display:block;padding:0.6rem 1rem;font-size:0.82rem;color:var(--text-muted);cursor:pointer;transition:background 0.15s,color 0.15s;text-decoration:none}
+.user-menu a:hover{background:var(--dark-4);color:var(--gold)}
+.user-menu .sep{height:1px;background:var(--border);margin:3px 0}
+.role-badge{background:rgba(201,168,76,0.12);border:1px solid var(--border-strong);color:var(--gold);font-size:0.65rem;padding:2px 6px;letter-spacing:0.08em;text-transform:uppercase}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:260px;flex-shrink:0;background:var(--dark-2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:transform 0.25s}
+.sidebar.hidden{transform:translateX(-100%);position:absolute;top:56px;bottom:0;z-index:50}
+.sidebar-header{padding:0.85rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.sidebar-header h3{font-family:var(--serif);font-size:1rem;font-weight:600;color:var(--text)}
+.new-chan-btn{background:none;border:1px solid var(--border-strong);color:var(--gold);font-size:0.7rem;padding:3px 8px;cursor:pointer;letter-spacing:0.05em;transition:background 0.15s;display:none}
+.new-chan-btn:hover{background:rgba(201,168,76,0.1)}
+.channels-list{flex:1;overflow-y:auto;padding:0.5rem 0}
+.channels-list::-webkit-scrollbar{width:3px}
+.channels-list::-webkit-scrollbar-thumb{background:var(--dark-5)}
+.ch-item{display:flex;align-items:center;gap:0.75rem;padding:0.6rem 1rem;cursor:pointer;transition:background 0.15s;border-left:3px solid transparent}
+.ch-item:hover{background:var(--dark-3)}
+.ch-item.active{background:var(--dark-3);border-left-color:var(--gold)}
+.ch-info{flex:1;min-width:0}
+.ch-name{font-size:0.88rem;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-preview{font-size:0.75rem;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.sidebar-footer{padding:0.75rem 1rem;border-top:1px solid var(--border)}
+.online-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:5px}
+.sidebar-footer p{font-size:0.73rem;color:var(--text-dim)}
+
+/* ── CHAT AREA ── */
+.chat-area{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.chat-header{padding:0.75rem 1.25rem;background:var(--dark-2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1rem;flex-shrink:0}
+.chat-header-info h4{font-size:0.95rem;font-weight:500}
+.chat-header-info p{font-size:0.75rem;color:var(--text-dim);margin-top:1px}
+.chat-header-actions{margin-left:auto;display:flex;gap:0.5rem}
+.hdr-btn{background:none;border:1px solid var(--border);color:var(--text-muted);font-size:0.72rem;padding:5px 10px;cursor:pointer;letter-spacing:0.05em;display:flex;align-items:center;gap:5px;transition:border-color 0.15s,color 0.15s}
+.hdr-btn:hover{border-color:var(--border-strong);color:var(--gold)}
+.hdr-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── MESSAGES ── */
+.messages{flex:1;overflow-y:auto;padding:1rem 1.25rem;display:flex;flex-direction:column;gap:0.75rem}
+.messages::-webkit-scrollbar{width:4px}
+.messages::-webkit-scrollbar-thumb{background:var(--dark-5);border-radius:2px}
+.msg{display:flex;gap:0.75rem;align-items:flex-start;animation:fadeUp 0.2s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.msg.own{flex-direction:row-reverse}
+.msg-avatar{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:600}
+.msg-bubble{max-width:72%;background:var(--dark-3);border:1px solid var(--border);padding:0.65rem 0.9rem}
+.msg.own .msg-bubble{background:rgba(201,168,76,0.08);border-color:var(--border-strong)}
+.msg-sender{font-size:0.72rem;font-weight:500;color:var(--gold);margin-bottom:4px;display:flex;align-items:center;gap:5px}
+.msg-text{font-size:0.87rem;line-height:1.6;color:var(--text)}
+.msg-time{font-size:0.65rem;color:var(--text-dim);margin-top:5px;text-align:right}
+
+/* ── SIGNAL CARD ── */
+.signal-card{background:var(--dark-2);border:1px solid var(--border-strong);padding:0.9rem 1rem;margin-top:0.5rem;position:relative;overflow:hidden}
+.signal-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.signal-card.buy::before{background:var(--green)}
+.signal-card.sell::before{background:var(--red)}
+.signal-top{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem}
+.sig-dir{font-size:0.7rem;font-weight:600;letter-spacing:0.1em;padding:3px 8px}
+.sig-dir.buy{background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.3)}
+.sig-dir.sell{background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.3)}
+.sig-pair{font-family:var(--serif);font-size:1rem;font-weight:600;color:var(--text)}
+.sig-status{margin-left:auto;font-size:0.65rem;letter-spacing:0.08em;color:var(--text-dim);padding:2px 6px;border:1px solid var(--border)}
+.sig-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;margin-top:0.5rem}
+.sig-cell label{display:block;font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:2px}
+.sig-cell span{font-size:0.85rem;font-weight:500;color:var(--text)}
+.sig-cell span.entry{color:var(--gold)}
+.sig-cell span.tp{color:var(--green)}
+.sig-cell span.sl{color:var(--red)}
+.sig-note{font-size:0.78rem;color:var(--text-muted);margin-top:0.6rem;padding-top:0.5rem;border-top:1px solid var(--border);line-height:1.5}
+
+/* ── DATE DIVIDER ── */
+.date-div{display:flex;align-items:center;gap:0.75rem;margin:0.5rem 0}
+.date-div::before,.date-div::after{content:'';flex:1;height:1px;background:var(--border)}
+.date-div span{font-size:0.68rem;color:var(--text-dim);white-space:nowrap;letter-spacing:0.06em}
+
+/* ── READ-ONLY BAR ── */
+.readonly-bar{padding:0.75rem 1.25rem;background:rgba(92,88,82,0.12);border-top:1px solid var(--border);font-size:0.78rem;color:var(--text-dim);text-align:center;flex-shrink:0}
+
+/* ── INPUT BAR ── */
+.input-bar{padding:0.75rem 1.25rem;background:var(--dark-2);border-top:1px solid var(--border);display:flex;gap:0.6rem;align-items:flex-end;flex-shrink:0}
+.input-wrap{flex:1;position:relative}
+#msgInput{width:100%;background:var(--dark-3);border:1px solid var(--border);color:var(--text);font-family:var(--sans);font-size:0.88rem;padding:0.65rem 2.8rem 0.65rem 1rem;outline:none;resize:none;max-height:120px;line-height:1.5;transition:border-color 0.2s;overflow-y:auto}
+#msgInput:focus{border-color:var(--border-strong)}
+#msgInput::placeholder{color:var(--text-dim)}
+.attach-btn{position:absolute;right:0.6rem;bottom:0.6rem;background:none;border:none;cursor:pointer;color:var(--text-dim);padding:2px;transition:color 0.15s;display:flex}
+.attach-btn:hover{color:var(--gold)}
+.attach-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.input-actions{display:flex;gap:0.5rem;align-items:flex-end}
+.sig-btn{background:rgba(201,168,76,0.1);border:1px solid var(--border-strong);color:var(--gold);font-family:var(--sans);font-size:0.75rem;padding:0.55rem 0.9rem;cursor:pointer;letter-spacing:0.04em;white-space:nowrap;transition:background 0.15s;display:none;align-items:center;gap:5px}
+.sig-btn:hover{background:rgba(201,168,76,0.18)}
+.sig-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.send-btn{background:var(--gold);border:none;color:var(--dark);width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s,transform 0.1s;flex-shrink:0}
+.send-btn:hover{background:var(--gold-light);transform:translateY(-1px)}
+.send-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── MODALS ── */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.open{display:flex}
+.modal{background:var(--dark-3);border:1px solid var(--border-strong);width:100%;max-width:480px;padding:2rem;position:relative;max-height:90vh;overflow-y:auto}
+.modal h3{font-family:var(--serif);font-size:1.4rem;margin-bottom:0.35rem}
+.modal>p{font-size:0.82rem;color:var(--text-muted);margin-bottom:1.5rem}
+.modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:1rem;padding:4px 7px;transition:color 0.15s}
+.modal-close:hover{color:var(--gold)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem}
+.form-group{display:flex;flex-direction:column;gap:4px;margin-bottom:0.75rem}
+.form-group label{font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold)}
+.form-group input,.form-group select,.form-group textarea{background:var(--dark-2);border:1px solid var(--border);color:var(--text);font-family:var(--sans);font-size:0.87rem;padding:0.55rem 0.75rem;outline:none;transition:border-color 0.2s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--border-strong)}
+.form-group select{cursor:pointer}
+.form-group select option{background:var(--dark-3)}
+.form-group textarea{resize:vertical;min-height:70px}
+.dir-toggle{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem}
+.dir-opt{padding:0.6rem;text-align:center;cursor:pointer;font-size:0.82rem;font-weight:500;border:1px solid var(--border);transition:all 0.15s;letter-spacing:0.05em}
+.dir-opt.buy.active{background:rgba(34,197,94,0.12);color:var(--green);border-color:rgba(34,197,94,0.4)}
+.dir-opt.sell.active{background:rgba(239,68,68,0.12);color:var(--red);border-color:rgba(239,68,68,0.4)}
+.dir-opt:not(.active){color:var(--text-dim)}
+.modal-submit{width:100%;background:var(--gold);color:var(--dark);border:none;font-family:var(--sans);font-weight:500;font-size:0.88rem;padding:0.85rem;cursor:pointer;letter-spacing:0.04em;margin-top:1rem;transition:background 0.15s}
+.modal-submit:hover{background:var(--gold-light)}
+.chan-modal-box{background:var(--dark-3);border:1px solid var(--border-strong);width:100%;max-width:380px;padding:1.75rem;position:relative}
+.chan-modal-box h3{font-family:var(--serif);font-size:1.3rem;margin-bottom:1.25rem}
+
+/* ── ADMIN PANEL ── */
+#adminPanel{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.8);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:1rem}
+#adminPanel.open{display:flex}
+.ap-box{background:var(--dark-3);border:1px solid var(--border-strong);width:100%;max-width:580px;max-height:85vh;overflow-y:auto;padding:2rem;position:relative}
+.ap-box h3{font-family:var(--serif);font-size:1.4rem;margin-bottom:0.25rem}
+.ap-box>.sub{font-size:0.8rem;color:var(--text-dim);margin-bottom:1.5rem}
+.ap-close{position:absolute;top:1rem;right:1rem;background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:1rem;padding:4px 8px;transition:color 0.15s}
+.ap-close:hover{color:var(--gold)}
+.user-table{width:100%;border-collapse:collapse;font-size:0.83rem;margin-bottom:1.5rem}
+.user-table th{text-align:left;padding:0.5rem 0.75rem;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);border-bottom:1px solid var(--border-strong);font-weight:400}
+.user-table td{padding:0.75rem;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text-muted)}
+.user-table tr:hover td{background:rgba(255,255,255,0.02)}
+.user-table td:first-child{color:var(--text);font-weight:500}
+.role-select{background:var(--dark-2);border:1px solid var(--border);color:var(--text);font-family:var(--sans);font-size:0.78rem;padding:3px 8px;outline:none;cursor:pointer}
+.role-select option{background:var(--dark-3)}
+.kick-btn{background:none;border:1px solid rgba(239,68,68,0.3);color:#f87171;font-size:0.7rem;padding:3px 8px;cursor:pointer;transition:background 0.15s}
+.kick-btn:hover{background:rgba(239,68,68,0.1)}
+
+/* ── EMPTY STATE ── */
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-dim);gap:0.75rem}
+.empty-state svg{width:48px;height:48px;stroke:var(--text-dim);opacity:0.3;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.empty-state p{font-size:0.87rem}
+
+@media(max-width:680px){
+  .sidebar{position:fixed;top:56px;bottom:0;left:0;z-index:50;transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .search-wrap,.role-badge{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loadingSpinner">
+  <div class="spinner"></div>
+  <p>Connecting to Chriss Signal Hub…</p>
+</div>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">Chriss<span> Signals</span></div>
+    <div class="login-sub">Enter your name to join the hub</div>
+    <div class="login-err" id="loginErr"></div>
+    <div class="lf-group">
+      <label>Your Name</label>
+      <input type="text" id="loginName" placeholder="e.g. James Kamau" maxlength="32"
+             autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Enter Signal Hub →</button>
+    <div class="login-note">
+      <strong>Admin?</strong> — Your name must match the admin list.<br>
+      Contact <strong>Chriss</strong> on WhatsApp to request admin access.
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="menu-btn" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="logo">Chriss<span> Signals</span></div>
+    </div>
+    <div class="search-wrap">
+      <div class="search-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+      <input type="text" id="searchInput" placeholder="Search messages…" oninput="filterMessages(this.value)">
+    </div>
+    <div class="topbar-right">
+      <div class="user-pill" onclick="toggleUserMenu()">
+        <div id="topAvatar" style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--dark);display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:600;flex-shrink:0">?</div>
+        <span id="topName">—</span>
+        <div class="user-menu" id="userMenu">
+          <a id="adminLink" onclick="closeUserMenu();openAdminPanel()" style="display:none">👥 Manage Users</a>
+          <div class="sep" id="adminSep" style="display:none"></div>
+          <a onclick="closeUserMenu();doLogout()" style="color:#f87171">⏻ Sign Out</a>
+        </div>
+      </div>
+      <div class="role-badge" id="topRole">Member</div>
+    </div>
+  </div>
+
+  <!-- LAYOUT -->
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h3>Channels</h3>
+        <button class="new-chan-btn" id="newChanBtn" onclick="openChanModal()">+ New</button>
+      </div>
+      <div class="channels-list" id="channelsList"></div>
+      <div class="sidebar-footer">
+        <p><span class="online-dot"></span>Live · <span id="memberCount">—</span> members</p>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="chat-area">
+      <div class="empty-state" id="emptyState">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <p>Select a channel to start</p>
+      </div>
+
+      <div id="activeChat" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+        <div class="chat-header">
+          <div id="hdrIcon" style="width:38px;height:38px;border-radius:50%;background:rgba(201,168,76,0.15);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0"></div>
+          <div class="chat-header-info">
+            <h4 id="hdrName">—</h4>
+            <p id="hdrDesc">—</p>
+          </div>
+          <div class="chat-header-actions" id="adminHdrBtns" style="display:none">
+            <button class="hdr-btn" onclick="clearChannel()">
+              <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              Clear
+            </button>
+            <button class="hdr-btn" onclick="pinChannel()">
+              <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Pin
+            </button>
+          </div>
+        </div>
+
+        <div class="messages" id="messages"></div>
+
+        <!-- Read-only notice -->
+        <div class="readonly-bar" id="readonlyBar" style="display:none">
+          🔒 You have read-only access — you can view all signals and messages.
+          <a href="https://wa.me/+250783737393" style="color:var(--gold);text-decoration:none;margin-left:4px" target="_blank">Contact Chriss to upgrade →</a>
+        </div>
+
+        <!-- Input (admin only) -->
+        <div class="input-bar" id="inputBar" style="display:none">
+          <div class="input-wrap">
+            <textarea id="msgInput" rows="1" placeholder="Type a message…"
+                      onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+            <button class="attach-btn" title="Attach file">
+              <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+            </button>
+          </div>
+          <div class="input-actions">
+            <button class="sig-btn" id="sigBtn" onclick="openSignalModal()">
+              <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Signal
+            </button>
+            <button class="send-btn" onclick="sendMessage()">
+              <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SIGNAL MODAL -->
+<div class="modal-overlay" id="signalModal" onclick="if(event.target===this)closeSignalModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeSignalModal()">✕</button>
+    <h3>Post a Signal</h3>
+    <p>Fill in trade details — appears as a formatted signal card in the channel.</p>
+    <div class="form-group">
+      <label>Direction</label>
+      <div class="dir-toggle">
+        <div class="dir-opt buy active" onclick="setDir('buy')">▲ BUY</div>
+        <div class="dir-opt sell" onclick="setDir('sell')">▼ SELL</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="margin-bottom:0"><label>Pair</label>
+        <select id="sigPair">
+          <option>GBPUSD</option><option>EURUSD</option><option>USDJPY</option>
+          <option>XAUUSD</option><option>AUDUSD</option><option>NZDUSD</option>
+          <option>USDCAD</option><option>USDCHF</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0"><label>Timeframe</label>
+        <select id="sigTF">
+          <option>M15</option><option>M30</option><option>H1</option>
+          <option>H4</option><option>D1</option><option>W1</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="margin-bottom:0"><label>Entry</label>
+        <input type="number" id="sigEntry" placeholder="1.28450" step="0.00001">
+      </div>
+      <div class="form-group" style="margin-bottom:0"><label>Lot Size</label>
+        <input type="number" id="sigLot" placeholder="0.10" step="0.01">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="margin-bottom:0"><label>Take Profit</label>
+        <input type="number" id="sigTP" placeholder="1.29100" step="0.00001">
+      </div>
+      <div class="form-group" style="margin-bottom:0"><label>Stop Loss</label>
+        <input type="number" id="sigSL" placeholder="1.27900" step="0.00001">
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:0.75rem">
+      <label>Analysis Note (optional)</label>
+      <textarea id="sigNote" placeholder="e.g. H4 BOS confirmed, sweeping 4H liquidity…"></textarea>
+    </div>
+    <button class="modal-submit" onclick="postSignal()">Post Signal →</button>
+  </div>
+</div>
+
+<!-- NEW CHANNEL MODAL -->
+<div class="modal-overlay" id="chanModal" onclick="if(event.target===this)closeChanModal()">
+  <div class="chan-modal-box">
+    <button class="modal-close" onclick="closeChanModal()">✕</button>
+    <h3>New Channel</h3>
+    <div class="form-group"><label>Channel Name</label>
+      <input type="text" id="newChanName" placeholder="e.g. Gold Signals">
+    </div>
+    <div class="form-group"><label>Description</label>
+      <input type="text" id="newChanDesc" placeholder="e.g. XAUUSD trade alerts">
+    </div>
+    <div class="form-group"><label>Emoji / Icon</label>
+      <input type="text" id="newChanIcon" placeholder="e.g. 📊" maxlength="2">
+    </div>
+    <button class="modal-submit" onclick="createChannel()">Create Channel →</button>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" onclick="if(event.target===this)closeAdminPanel()">
+  <div class="ap-box">
+    <button class="ap-close" onclick="closeAdminPanel()">✕</button>
+    <h3>User Management</h3>
+    <p class="sub">All members who have joined. Change roles or remove users instantly.</p>
+    <table class="user-table">
+      <thead><tr><th>Name</th><th>Joined</th><th>Role</th><th></th></tr></thead>
+      <tbody id="userTableBody">
+        <tr><td colspan="4" style="text-align:center;padding:1.5rem;color:var(--text-dim)">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   ⚙️  ADMIN NAMES — add/remove names here (lowercase)
+   Anyone whose name matches gets admin role automatically
+═══════════════════════════════════════════════════════ */
+const ADMIN_NAMES = ['chriss', 'chris'];
+
+/* ══ CONSTANTS ══ */
+const COLORS = ['#C9A84C','#22C55E','#3B82F6','#A855F7','#EF4444','#F59E0B','#14B8A6'];
+const DEFAULT_CHANNELS = [
+  {id:'general',   name:'General',           icon:'💬', desc:'Announcements & discussion',    color:'#C9A84C', order:0},
+  {id:'gbpusd',    name:'GBP/USD Signals',   icon:'📈', desc:'GBPUSD trade alerts',           color:'#22C55E', order:1},
+  {id:'gold',      name:'Gold (XAU) Signals',icon:'🏅', desc:'XAUUSD premium signals',        color:'#F59E0B', order:2},
+  {id:'education', name:'Education',          icon:'📚', desc:'Learning & trade reviews',      color:'#3B82F6', order:3},
+];
+
+/* ══ STATE ══ */
+let db, fs;
+let CU = null;
+let channels = [];
+let activeChannel = null;
+let unsubMsg = null;
+let signalDir = 'buy';
+
+/* ══ FIREBASE INIT ══ */
+function boot() {
+  db = window._db;
+  fs = window._fs;
+  document.getElementById('loadingSpinner').style.display = 'none';
+  const saved = sessionStorage.getItem('cfxu');
+  if (saved) { try { CU = JSON.parse(saved); startApp(); return; } catch {} }
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+if (window._fbReady) boot();
+else window.addEventListener('fb-ready', boot);
+
+/* ══ LOGIN ══ */
+async function doLogin() {
+  const rawName = document.getElementById('loginName').value.trim();
+  if (!rawName) return showErr('Please enter your name.');
+  const nameLower = rawName.toLowerCase();
+  const isAdmin = ADMIN_NAMES.includes(nameLower);
+  const uid = 'u_' + nameLower.replace(/\W+/g,'_');
+  const color = COLORS[Math.abs(hash(uid)) % COLORS.length];
+
+  setLoginLoading(true);
+  try {
+    const ref = fs.doc(db, 'users', uid);
+    const snap = await fs.getDoc(ref);
+    let role;
+    if (snap.exists()) {
+      role = isAdmin ? 'admin' : (snap.data().role || 'readonly');
+      await fs.updateDoc(ref, { lastSeen: fs.serverTimestamp(), name: rawName });
+    } else {
+      role = isAdmin ? 'admin' : 'readonly';
+      await fs.setDoc(ref, { name: rawName, role, color, uid,
+                             joinedAt: fs.serverTimestamp(), lastSeen: fs.serverTimestamp() });
+    }
+    CU = { name: rawName, role, color, uid };
+    sessionStorage.setItem('cfxu', JSON.stringify(CU));
+    document.getElementById('loginScreen').style.display = 'none';
+    startApp();
+  } catch(e) {
+    console.error(e);
+    showErr('Could not connect. Check your Firebase config above.');
+    setLoginLoading(false);
+  }
+}
+function showErr(m) {
+  const el = document.getElementById('loginErr');
+  el.textContent = m; el.style.display = 'block';
+}
+function setLoginLoading(on) {
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = on; btn.textContent = on ? 'Joining…' : 'Enter Signal Hub →';
+}
+
+/* ══ LOGOUT ══ */
+function doLogout() {
+  sessionStorage.removeItem('cfxu'); CU = null;
+  if (unsubMsg) { unsubMsg(); unsubMsg = null; }
+  activeChannel = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginName').value = '';
+  document.getElementById('loginErr').style.display = 'none';
+  setLoginLoading(false);
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+/* ══ START APP ══ */
+async function startApp() {
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('topAvatar').textContent = ini(CU.name);
+  document.getElementById('topAvatar').style.background = CU.color;
+  document.getElementById('topName').textContent = CU.name;
+  document.getElementById('topRole').textContent = CU.role === 'admin' ? '⭐ Admin' : 'Read-only';
+  if (CU.role === 'admin') {
+    document.getElementById('adminLink').style.display = 'block';
+    document.getElementById('adminSep').style.display = 'block';
+    document.getElementById('newChanBtn').style.display = 'block';
+    document.getElementById('sigBtn').style.display = 'flex';
+    document.getElementById('adminHdrBtns').style.display = 'flex';
+  }
+  await loadChannels();
+  renderSidebar();
+  loadMemberCount();
+  if (channels.length) selectChannel(channels[0].id);
+}
+
+/* ══ CHANNELS ══ */
+async function loadChannels() {
+  const snap = await fs.getDocs(fs.collection(db, 'channels'));
+  if (snap.empty) {
+    for (const ch of DEFAULT_CHANNELS)
+      await fs.setDoc(fs.doc(db, 'channels', ch.id), ch);
+    channels = DEFAULT_CHANNELS.map(c => ({...c}));
+  } else {
+    channels = [];
+    snap.forEach(d => channels.push({id: d.id, ...d.data()}));
+    channels.sort((a,b)=>(a.order||0)-(b.order||0));
+  }
+}
+
+function renderSidebar() {
+  const list = document.getElementById('channelsList');
+  list.innerHTML = '';
+  channels.forEach(ch => {
+    const el = document.createElement('div');
+    el.className = 'ch-item' + (activeChannel===ch.id?' active':'');
+    el.onclick = () => selectChannel(ch.id);
+    el.innerHTML = `
+      <div style="width:36px;height:36px;border-radius:50%;background:${ch.color}22;color:${ch.color};display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">${ch.icon||'📡'}</div>
+      <div class="ch-info">
+        <div class="ch-name">${ch.name}</div>
+        <div class="ch-preview">${ch.desc||''}</div>
+      </div>`;
+    list.appendChild(el);
+  });
+}
+
+/* ══ SELECT CHANNEL ══ */
+function selectChannel(id) {
+  activeChannel = id;
+  const ch = channels.find(c=>c.id===id);
+  if (!ch) return;
+  document.getElementById('emptyState').style.display = 'none';
+  const ac = document.getElementById('activeChat');
+  ac.style.display = 'flex';
+  document.getElementById('hdrIcon').textContent = ch.icon;
+  document.getElementById('hdrIcon').style.background = ch.color+'22';
+  document.getElementById('hdrIcon').style.color = ch.color;
+  document.getElementById('hdrName').textContent = ch.name;
+  document.getElementById('hdrDesc').textContent = ch.desc;
+  const isAdmin = CU.role === 'admin';
+  document.getElementById('inputBar').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('readonlyBar').style.display = isAdmin ? 'none' : 'block';
+  renderSidebar();
+  listenMessages(id);
+  if (window.innerWidth <= 680) document.getElementById('sidebar').classList.remove('open');
+}
+
+/* ══ REAL-TIME MESSAGES ══ */
+function listenMessages(chId) {
+  if (unsubMsg) unsubMsg();
+  const q = fs.query(fs.collection(db,'channels',chId,'messages'), fs.orderBy('time','asc'));
+  unsubMsg = fs.onSnapshot(q, snap => {
+    const box = document.getElementById('messages');
+    box.innerHTML = '';
+    if (snap.empty) {
+      box.innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:0.82rem;margin-top:2rem">No messages yet.</div>';
+      return;
+    }
+    let lastDate = '';
+    snap.forEach(d => {
+      const m = {id:d.id, ...d.data()};
+      m.time = m.time?.toMillis ? m.time.toMillis() : Date.now();
+      m.own = m.uid === CU.uid;
+      const ds = new Date(m.time).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+      if (ds !== lastDate) { lastDate=ds; box.insertAdjacentHTML('beforeend',`<div class="date-div"><span>${ds}</span></div>`); }
+      box.insertAdjacentHTML('beforeend', buildMsg(m));
+    });
+    box.scrollTop = box.scrollHeight;
+  });
+}
+
+/* ══ BUILD MESSAGE HTML ══ */
+function buildMsg(m) {
+  const col = m.color || '#C9A84C';
+  const adminTag = m.role==='admin' ? '<span style="color:var(--gold);font-size:0.65rem;opacity:0.8">⭐ Admin</span>' : '';
+  let body = '';
+  if (m.type === 'signal') {
+    const s = m.signal;
+    body = `
+      <div class="msg-text" style="font-size:0.8rem;color:var(--text-muted)">Trade signal posted</div>
+      <div class="signal-card ${s.dir}">
+        <div class="signal-top">
+          <span class="sig-dir ${s.dir}">${s.dir==='buy'?'▲ BUY':'▼ SELL'}</span>
+          <span class="sig-pair">${s.pair}</span>
+          <span style="font-size:0.75rem;color:var(--text-dim);margin-left:4px">${s.tf}</span>
+          <span class="sig-status">LIVE</span>
+        </div>
+        <div class="sig-grid">
+          <div class="sig-cell"><label>Entry</label><span class="entry">${s.entry}</span></div>
+          <div class="sig-cell"><label>Take Profit</label><span class="tp">${s.tp}</span></div>
+          <div class="sig-cell"><label>Stop Loss</label><span class="sl">${s.sl}</span></div>
+          <div class="sig-cell"><label>Lot Size</label><span>${s.lot||'—'}</span></div>
+          <div class="sig-cell"><label>R:R</label><span>${rr(s)}</span></div>
+          <div class="sig-cell"><label>Status</label><span style="color:var(--green);font-size:0.78rem">● Active</span></div>
+        </div>
+        ${s.note?`<div class="sig-note">📝 ${esc(s.note)}</div>`:''}
+      </div>`;
+  } else {
+    body = `<div class="msg-text">${esc(m.text||'')}</div>`;
+  }
+  return `
+    <div class="msg${m.own?' own':''}">
+      <div class="msg-avatar" style="background:${col}22;color:${col}">${ini(m.sender)}</div>
+      <div class="msg-bubble">
+        <div class="msg-sender">${esc(m.sender)} ${adminTag}</div>
+        ${body}
+        <div class="msg-time">${fmt(m.time)}</div>
+      </div>
+    </div>`;
+}
+
+/* ══ SEND TEXT ══ */
+async function sendMessage() {
+  if (CU.role !== 'admin') return;
+  const inp = document.getElementById('msgInput');
+  const text = inp.value.trim();
+  if (!text || !activeChannel) return;
+  inp.value=''; inp.style.height='';
+  await fs.addDoc(fs.collection(db,'channels',activeChannel,'messages'), {
+    type:'text', text,
+    sender:CU.name, role:CU.role, color:CU.color, uid:CU.uid,
+    time: fs.serverTimestamp()
+  });
+}
+function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
+function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+
+/* ══ SIGNAL MODAL ══ */
+function openSignalModal(){ if(!activeChannel)return; document.getElementById('signalModal').classList.add('open'); }
+function closeSignalModal(){ document.getElementById('signalModal').classList.remove('open'); }
+function setDir(d){
+  signalDir=d;
+  document.querySelectorAll('.dir-opt').forEach(el=>{ el.classList.remove('active'); if(el.classList.contains(d))el.classList.add('active'); });
+}
+async function postSignal(){
+  const entry=document.getElementById('sigEntry').value.trim();
+  const tp=document.getElementById('sigTP').value.trim();
+  const sl=document.getElementById('sigSL').value.trim();
+  if(!entry||!tp||!sl){alert('Entry, TP and SL are required.');return;}
+  await fs.addDoc(fs.collection(db,'channels',activeChannel,'messages'),{
+    type:'signal',
+    sender:CU.name, role:CU.role, color:CU.color, uid:CU.uid,
+    time:fs.serverTimestamp(),
+    signal:{
+      dir:signalDir,
+      pair:document.getElementById('sigPair').value,
+      tf:document.getElementById('sigTF').value,
+      entry,tp,sl,
+      lot:document.getElementById('sigLot').value||'—',
+      note:document.getElementById('sigNote').value.trim()
+    }
+  });
+  closeSignalModal();
+  ['sigEntry','sigTP','sigSL','sigLot','sigNote'].forEach(i=>document.getElementById(i).value='');
+}
+
+/* ══ CHANNEL MANAGEMENT ══ */
+function openChanModal(){ document.getElementById('chanModal').classList.add('open'); }
+function closeChanModal(){ document.getElementById('chanModal').classList.remove('open'); }
+async function createChannel(){
+  const name=document.getElementById('newChanName').value.trim();
+  if(!name){alert('Channel name required.');return;}
+  const icon=document.getElementById('newChanIcon').value.trim()||'📡';
+  const desc=document.getElementById('newChanDesc').value.trim()||name;
+  const color=COLORS[channels.length%COLORS.length];
+  const id='ch_'+Date.now();
+  await fs.setDoc(fs.doc(db,'channels',id),{name,icon,desc,color,order:channels.length});
+  channels.push({id,name,icon,desc,color,order:channels.length});
+  renderSidebar(); closeChanModal();
+  ['newChanName','newChanDesc','newChanIcon'].forEach(i=>document.getElementById(i).value='');
+  selectChannel(id);
+}
+async function clearChannel(){
+  if(!activeChannel||!confirm('Clear all messages?'))return;
+  const snap=await fs.getDocs(fs.collection(db,'channels',activeChannel,'messages'));
+  for(const d of snap.docs) await fs.deleteDoc(d.ref);
+}
+function pinChannel(){
+  const idx=channels.findIndex(c=>c.id===activeChannel);
+  if(idx>0){ const [ch]=channels.splice(idx,1); channels.unshift(ch); renderSidebar(); }
+}
+
+/* ══ ADMIN PANEL ══ */
+function openAdminPanel(){ document.getElementById('adminPanel').classList.add('open'); loadUsers(); }
+function closeAdminPanel(){ document.getElementById('adminPanel').classList.remove('open'); }
+
+async function loadUsers(){
+  const tbody=document.getElementById('userTableBody');
+  tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:1.5rem;color:var(--text-dim)">Loading…</td></tr>';
+  const snap=await fs.getDocs(fs.collection(db,'users'));
+  tbody.innerHTML='';
+  if(snap.empty){ tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:1.5rem;color:var(--text-dim)">No users yet.</td></tr>'; return; }
+  snap.forEach(d=>{
+    const u={id:d.id,...d.data()};
+    const joined=u.joinedAt?.toDate?u.joinedAt.toDate().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}):'—';
+    const isMe=u.id===CU.uid;
+    tbody.insertAdjacentHTML('beforeend',`
+      <tr>
+        <td>${esc(u.name||u.id)}${isMe?' <span style="font-size:0.7rem;color:var(--text-dim)">(you)</span>':''}</td>
+        <td style="font-size:0.8rem">${joined}</td>
+        <td>${isMe
+          ?`<span style="font-size:0.75rem;color:var(--gold)">${u.role}</span>`
+          :`<select class="role-select" onchange="changeRole('${u.id}',this.value)">
+              <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
+              <option value="readonly" ${u.role==='readonly'?'selected':''}>Read-only</option>
+            </select>`}
+        </td>
+        <td>${isMe?'':`<button class="kick-btn" onclick="kickUser('${u.id}','${esc(u.name||u.id)}')">Remove</button>`}</td>
+      </tr>`);
+  });
+  document.getElementById('memberCount').textContent=snap.size;
+}
+async function changeRole(uid,role){
+  await fs.updateDoc(fs.doc(db,'users',uid),{role});
+}
+async function kickUser(uid,name){
+  if(!confirm(`Remove "${name}"? They can rejoin but will be read-only.`))return;
+  await fs.deleteDoc(fs.doc(db,'users',uid));
+  loadUsers();
+}
+async function loadMemberCount(){
+  const snap=await fs.getDocs(fs.collection(db,'users'));
+  document.getElementById('memberCount').textContent=snap.size;
+}
+
+/* ══ SEARCH ══ */
+function filterMessages(q){
+  document.querySelectorAll('.msg').forEach(el=>{
+    el.style.display=(!q||el.textContent.toLowerCase().includes(q.toLowerCase()))?'':'none';
+  });
+}
+
+/* ══ UI HELPERS ══ */
+function toggleSidebar(){
+  const s=document.getElementById('sidebar');
+  window.innerWidth<=680?s.classList.toggle('open'):s.classList.toggle('hidden');
+}
+function toggleUserMenu(){ document.getElementById('userMenu').classList.toggle('open'); }
+function closeUserMenu(){ document.getElementById('userMenu').classList.remove('open'); }
+document.addEventListener('click',e=>{ if(!e.target.closest('.user-pill'))closeUserMenu(); });
+
+/* ══ UTILS ══ */
+function ini(n){ return (n||'?').split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase(); }
+function esc(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmt(ts){
+  const d=new Date(ts),now=new Date();
+  return d.toDateString()===now.toDateString()
+    ?d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})
+    :d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+}
+function rr(s){
+  try{const e=parseFloat(s.entry),t=parseFloat(s.tp),l=parseFloat(s.sl),r=Math.abs(t-e),k=Math.abs(e-l);return k?'1:'+(r/k).toFixed(1):'—';}catch{return '—';}
+}
+function hash(s){let h=0;for(let i=0;i<s.length;i++){h=(Math.imul(31,h)+s.charCodeAt(i))|0}return h;}
+</script>
+</body>
+</html>

@@ -577,9 +577,10 @@
   <div class="logo-row">
     <div class="logo-icon">₿</div>
     <h1>Chriss Forex Trading</h1>
+    <div class="logo-icon">₿</div>
   </div>
   <div class="divider"></div>
-  <p>Select Your Membership Plan</p>
+  <!-- <p>Select Your Membership Plan</p> -->
 </header>
 
 <!-- BILLING TOGGLE -->
@@ -617,7 +618,7 @@
       <div class="momo-logo">📱</div>
       <div class="momo-info">
         <div class="momo-label">Send Mobile Money To</div>
-        <div class="momo-number" id="momo-number">+250 790 034 578</div>
+        <div class="momo-number" id="momo-number">+250 783 737 393</div>
         <div class="momo-name">Chriss Forex Trading</div>
       </div>
       <button class="copy-btn" id="copyBtn" onclick="copyNumber()">Copy</button>
@@ -628,7 +629,7 @@
       <strong>How to pay:</strong>
       <ol>
         <li>Dial <strong>*182#</strong> or open your MoMo app</li>
-        <li>Send <strong id="step-price">the amount</strong> to <strong>+250 790 034 578</strong></li>
+        <li>Send <strong id="step-price">the amount</strong> to <strong>+250 783 737 393</strong></li>
         <li>Enter your details below and click <strong>Proceed</strong></li>
       </ol>
     </div>
@@ -687,6 +688,7 @@
             <option value="FR">🇫🇷 France</option>
             <option value="AE">🇦🇪 UAE</option>
             <option value="OTHER">🌍 Other</option>
+            <option value="" type="text"></option>
           </select>
         </div>
       </div>
@@ -706,56 +708,56 @@
 
   const plans = {
     monthly: [
+      // {
+      //   name: 'Standard',
+      //   subtitle: 'For beginners',
+      //   price: '$39.99',
+      //   period: 'per month',
+      //   popular: false,
+      //   features: ['Live Trading Sessions', 'Community Chat Access', 'Weekly Market Recaps', 'Educational Resources']
+      // },
       {
-        name: 'Standard',
-        subtitle: 'For beginners',
-        price: '$39.99',
-        period: 'per month',
-        popular: false,
-        features: ['Live Trading Sessions', 'Community Chat Access', 'Weekly Market Recaps', 'Educational Resources']
-      },
-      {
-        name: 'Elite',
+        name: 'Stay Displine And Concistency',
         subtitle: 'Most popular',
-        price: '$69.99',
+        price: '$70',
         period: 'per month',
         popular: true,
         features: ['All Standard Benefits', 'Live Coaching Calls', 'Priority Support', 'Trade Alerts & Signals', 'Monthly Webinars']
       },
-      {
-        name: 'Pro Elite',
-        subtitle: 'For serious traders',
-        price: '$99.99',
-        period: 'per month',
-        popular: false,
-        features: ['All Elite Benefits', '1-on-1 Mentorship', 'Private Trading Room', 'Portfolio Review', 'Direct Line to Chriss']
-      }
+      // {
+      //   name: 'Pro Elite',
+      //   subtitle: 'For serious traders',
+      //   price: '$99.99',
+      //   period: 'per month',
+      //   popular: false,
+      //   features: ['All Elite Benefits', '1-on-1 Mentorship', 'Private Trading Room', 'Portfolio Review', 'Direct Line to Chriss']
+      // }
     ],
     yearly: [
+      // {
+      //   name: 'Standard',
+      //   subtitle: 'Save 17%',
+      //   price: '$399',
+      //   period: 'per year',
+      //   popular: false,
+      //   features: ['All Monthly Standard', 'Annual Market Report', 'Priority Queue']
+      // },
       {
-        name: 'Standard',
-        subtitle: 'Save 17%',
-        price: '$399',
-        period: 'per year',
-        popular: false,
-        features: ['All Monthly Standard', 'Annual Market Report', 'Priority Queue']
-      },
-      {
-        name: 'Elite',
+        name: 'Continue Growing Account',
         subtitle: 'Save 20% · Best value',
-        price: '$699',
+        price: '$700',
         period: 'per year',
         popular: true,
         features: ['All Monthly Elite', 'Quarterly Reviews', 'Bonus Strategy Guide', 'Group Coaching Sessions']
       },
-      {
-        name: 'Pro Elite',
-        subtitle: 'Save 25%',
-        price: '$999',
-        period: 'per year',
-        popular: false,
-        features: ['All Monthly Pro Elite', 'Annual 1-on-1 Roadmap', 'Full VIP Mentorship', 'Lifetime Community Access']
-      }
+      // {
+      //   name: 'Pro Elite',
+      //   subtitle: 'Save 25%',
+      //   price: '$999',
+      //   period: 'per year',
+      //   popular: false,
+      //   features: ['All Monthly Pro Elite', 'Annual 1-on-1 Roadmap', 'Full VIP Mentorship', 'Lifetime Community Access']
+      // }
     ]
   };
 
